@@ -50,6 +50,12 @@ const validateProfileSchema = Yup.object().shape({
   ),
   profilePicture: Yup.string(),
 });
+interface IPaginationQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  roles?: string;
+}
 async function generatePassword(): Promise<string> {
   return crypto.randomBytes(8).toString('hex'); // Generates a random 16-character password
 }
@@ -263,7 +269,7 @@ export default {
         no_telp,
         password: generatedPassword,
         roles,
-        isVerify: true, // Consider using false until verified
+        isVerify: true,
       });
 
       await user.save();
@@ -277,30 +283,25 @@ export default {
         await institusi.save();
       }
 
-      // Render the email content using your render function
       const emailContent = await mail.render("add-user.ejs", {
         name: user.name,
         email: user.email,
-        password: generatedPassword, // Be cautious about sending passwords
+        password: generatedPassword,
         roles: user.roles,
       });
 
-      // Send the email using your send function
       await mail.send({
         to: user.email,
         subject: "User Registration Successful",
         content: emailContent,
       });
 
-      // Send a response to the client only after all operations are successful
       res.status(201).json({
         message: "User added successfully and email sent!",
         data: user,
       });
     } catch (error) {
-      // Only send a response in case of an error
       if (!res.headersSent) {
-        // Check if headers are already sent
         if (error instanceof Yup.ValidationError) {
           res.status(400).json({
             message: "Validation failed",
@@ -314,6 +315,61 @@ export default {
           });
         }
       }
+    }
+  },
+  async findAll(
+    req: Request<{}, {}, {}, IPaginationQuery>,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { page = 1, limit = 10, search = "", roles } = req.query;
+      const pageNumber = parseInt(page as unknown as string, 10);
+      const limitNumber = parseInt(limit as unknown as string, 10);
+
+      const searchQuery: any = search
+        ? { name: { $regex: search, $options: "i" } }
+        : {};
+
+      if (roles) {
+        searchQuery.roles = roles;
+      }
+
+      const totalUsers = await UsersModel.countDocuments(searchQuery);
+
+      const result = await UsersModel.find(searchQuery)
+        .skip((pageNumber - 1) * limitNumber)
+        .limit(limitNumber);
+
+      res.status(200).json({
+        data: result,
+        total: totalUsers,
+        page: pageNumber,
+        totalPages: Math.ceil(totalUsers / limitNumber),
+        message: "Success get all users",
+      });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({
+        data: err.message,
+        message: "Failed to get users",
+      });
+    }
+  },
+  async findOne(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await UsersModel.findOne({
+        _id: req.params.id,
+      });
+      res.status(200).json({
+        data: result,
+        message: "Success get one users",
+      });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({
+        data: err.message,
+        message: "Failed get one users",
+      });
     }
   },
 };

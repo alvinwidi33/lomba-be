@@ -1,4 +1,4 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { encrypt } from "../utils/encryption";
 import { SECRET } from "../utils/env";
 
