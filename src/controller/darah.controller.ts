@@ -1,16 +1,22 @@
 import { Request, Response } from "express";
 import DarahModel from "../models/darah.model";
 import * as Yup from "yup";
+import { PartisipanModel, InstitusiKesehatanModel, UsersModel } from "../models/users.model";
 
 const createValidationSchema = Yup.object().shape({
   volume: Yup.string().required(),
   tanggalDonor: Yup.number().required(),
 });
-
+interface IPaginationQueryInstitusi {
+  page?: number;
+  limit?: number;
+  rhesus?: string;
+}
 interface IPaginationQuery {
   page: number;
   limit: number;
   search?: string;
+  rhesus?: string;
 }
 
 export default {
@@ -39,25 +45,53 @@ export default {
     }
   },
   async findAll(req: Request, res: Response): Promise<void> {
-    try {
-      const result = await DarahModel.find().populate("Partisipan");
-      res.status(200).json({
-        data: result,
-        message: "Success get all darah",
-      });
-    } catch (error) {
-      const err = error as Error;
-      res.status(500).json({
-        data: err.message,
-        message: "Failed get all darah",
-      });
+  try {
+    const { page = 1, limit = 10, search = "", rhesus } = req.query as unknown as IPaginationQuery;
+
+    const query: any = {};
+
+    if (rhesus) {
+      const partisipanIds = await PartisipanModel.find({ rhesus }).select("_id");
+      query.partisipanId = { $in: partisipanIds };
     }
-  },
+
+    if (search) {
+      const institusiIds = await InstitusiKesehatanModel.find({
+        users: {
+          $in: await UsersModel.find({ name: { $regex: search, $options: "i" } }).select("_id"),
+        },
+      }).select("_id");
+      query.institusiId = { $in: institusiIds };
+    }
+
+    const result = await DarahModel.find(query)
+      .populate("Partisipan")
+      .populate("Institusi")
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await DarahModel.countDocuments(query);
+
+    res.status(200).json({
+      data: result,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      message: "Success get all darah",
+    });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({
+      data: err.message,
+      message: "Failed get all darah",
+    });
+  }
+},
   async findOne(req: Request, res: Response) {
     try {
       const result = await DarahModel.findOne({
         _id: req.params.id,
-      }).populate("Partisipan");
+      }).populate("Partisipan").populate("Institusi");
       res.status(200).json({
         data: result,
         message: "Success get one darah",
@@ -76,7 +110,7 @@ export default {
         { _id: req.params.id },
         req.body,
         { new: true }
-      ).populate("Partisipan");
+      );
 
       res.status(200).json({
         data: result,
@@ -90,4 +124,52 @@ export default {
       });
     }
   },
+  async darahByInstitusiKesehatan(req: Request, res: Response): Promise<void> {
+  try {
+    const { institusiName } = req.params;
+    const { page = 1, limit = 10, rhesus } = req.query as unknown as IPaginationQueryInstitusi;
+
+    const institusi = await InstitusiKesehatanModel.findOne({
+      users: {
+        $in: await UsersModel.find({ name: { $regex: institusiName, $options: "i" } }).select("_id"),
+      },
+    });
+
+    if (!institusi) {
+      res.status(404).json({
+        message: "Institusi Kesehatan not found",
+      });
+      return;
+    }
+
+    const query: any = { institusiId: institusi._id };
+
+    if (rhesus) {
+      const partisipanIds = await PartisipanModel.find({ rhesus }).select("_id");
+      query.partisipanId = { $in: partisipanIds };
+    }
+
+    const darahRecords = await DarahModel.find(query)
+      .populate("Partisipan")
+      .populate("Institusi")
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await DarahModel.countDocuments(query);
+
+    res.status(200).json({
+      data: darahRecords,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      message: `Success get darah for Institusi Kesehatan: ${institusiName}`,
+    });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({
+      message: "Failed to get darah by Institusi Kesehatan",
+      error: err.message,
+    });
+  }
+}
 };

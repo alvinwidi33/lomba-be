@@ -15,9 +15,19 @@ const DarahSchema = new Schema(
       required: true,
       unique: true,
     },
+    institusiId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Institusi Kesehatan",
+      required: true,
+      unique: true,
+    },
     tanggalDonor: {
       type: Date,
-      default:Date.now
+      default: Date.now,
+    },
+    kadaluarsa: {
+      type: Date,
+      default: null,
     },
   },
   {

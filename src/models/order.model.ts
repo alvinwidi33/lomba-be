@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
-const DarahSchema = new Schema(
+const OrderSchema = new Schema(
   {
     partisipanId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,9 +10,9 @@ const DarahSchema = new Schema(
       required: true,
       unique: true,
     },
-    inventoryId: {
+    darahId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Inventory",
+      ref: "Darah",
       required: true,
       unique: true,
     },
@@ -43,6 +43,6 @@ const DarahSchema = new Schema(
     timestamps: true,
   }
 );
-const DarahModel = mongoose.model("Darah", DarahSchema);
+const OrderModel = mongoose.model("Order", OrderSchema);
 
-export default DarahModel;
+export default OrderModel;
