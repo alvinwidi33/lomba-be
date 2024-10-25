@@ -30,6 +30,8 @@ router.patch("/order/:id", orderController.update);
 router.get("/order/all", orderController.findAll);
 router.patch("/order/status/:id", orderController.status);
 router.get("/order/institusi/:institusiName", orderController.darahByInstitusiKesehatan);
+router.get("/order/ordered/:partisipanId",orderController.findOrderedPartisipan);
+router.get("/order/history/:partisipanId",orderController.findByHistoryPartisipan);
 
 router.post("/upload", uploadMiddleware.single, uploadController.single);
 router.post("/uploads", uploadMiddleware.multiple, uploadController.multiple);

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import DarahModel from "../models/darah.model";
 import * as Yup from "yup";
 import { PartisipanModel, InstitusiKesehatanModel, UsersModel } from "../models/users.model";
-
+import mongoose from "mongoose";
 const createValidationSchema = Yup.object().shape({
   volume: Yup.string().required(),
   tanggalDonor: Yup.number().required(),
@@ -170,6 +170,98 @@ export default {
       message: "Failed to get darah by Institusi Kesehatan",
       error: err.message,
     });
+  }
+},
+async getTotalVolumeDarahByInstitusi(req: Request, res: Response):Promise<void> {
+  try {
+    const { institusiId } = req.params;
+    const totalVolume = await DarahModel.aggregate([
+      {
+        $match: {
+          institusiId: new mongoose.Types.ObjectId(institusiId),
+        },
+      },
+      {
+        $group: {
+          _id: "$institusiId",
+          totalVolume: { $sum: "$volume" },
+        },
+      },
+    ]);
+
+    if (totalVolume.length === 0) {
+      res.status(404).json({
+        message: "Tidak ada darah yang ditemukan untuk institusi ini.",
+      });
+    }
+
+    res.status(200).json({
+      totalVolume: totalVolume[0].totalVolume,
+      message: "Total volume darah berhasil dihitung.",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Terjadi kesalahan dalam menghitung volume darah per rhesus.",
+        error: error.message,
+      });
+    } else {
+      res.status(500).json({
+        message: "Terjadi kesalahan yang tidak diketahui.",
+      });
+    }
+  }
+},
+async getVolumeDarahByInstitusiAndRhesus(req: Request, res: Response):Promise<void> {
+  try {
+    const { institusiId } = req.params;
+    const volumeByRhesus = await DarahModel.aggregate([
+      {
+        $match: {
+          institusiId: new mongoose.Types.ObjectId(institusiId),
+        },
+      },
+      {
+        $lookup: {
+          from: "partisipans",
+          localField: "partisipanId",
+          foreignField: "_id",
+          as: "partisipanDetails",
+        },
+      },
+      {
+        $unwind: "$partisipanDetails",
+      },
+      {
+        $group: {
+          _id: "$partisipanDetails.rhesus",
+          totalVolume: { $sum: "$volume" },
+        },
+      },
+    ]);
+
+    if (volumeByRhesus.length === 0) {
+      res.status(404).json({
+        message: "Tidak ada darah yang ditemukan untuk institusi ini.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      data: volumeByRhesus,
+      message: "Volume darah per rhesus berhasil dihitung.",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Terjadi kesalahan dalam menghitung volume darah per rhesus.",
+        error: error.message,
+      });
+    } else {
+      res.status(500).json({
+        message: "Terjadi kesalahan yang tidak diketahui.",
+      });
+    }
   }
 }
 };

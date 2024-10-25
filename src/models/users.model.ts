@@ -133,10 +133,7 @@ const AdminSchema = new Schema({
 
 const UsersModel = mongoose.model("Users", UsersSchema);
 const PartisipanModel = mongoose.model("Partisipan", PartisipanSchema);
-const InstitusiKesehatanModel = mongoose.model(
-  "Institusi Kesehatan",
-  InstitusiKesehatanSchema
-);
+const InstitusiKesehatanModel = mongoose.model("Institusi Kesehatan", InstitusiKesehatanSchema);
 const AdminModel = mongoose.model("Admin", AdminSchema);
 
 export { UsersModel, PartisipanModel, InstitusiKesehatanModel, AdminModel };

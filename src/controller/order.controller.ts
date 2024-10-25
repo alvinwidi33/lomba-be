@@ -18,7 +18,11 @@ interface IPaginationQuery {
   search?: string;
   rhesus?: string;
 }
-
+interface IPaginationQueryPartisipan {
+  page: number;
+  limit: number;
+  status?: string;
+}
 export default {
   async create(req: Request, res: Response): Promise<void> {
     try {
@@ -170,7 +174,7 @@ export default {
 
       const orderRecords = await OrderModel.find(query)
         .populate("Partisipan")
-        .populate("Order")
+        .populate("Darah")
         .limit(limit * 1)
         .skip((page - 1) * limit);
 
@@ -220,6 +224,80 @@ export default {
       res.status(500).json({
         data: err.message,
         message: "Failed update order",
+      });
+    }
+  },
+  async findOrderedPartisipan(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+      } = req.query as unknown as IPaginationQueryPartisipan;
+
+      const { partisipanId } = req.params;
+
+      const query: any = {
+        status: "Ordered",
+        partisipanId: partisipanId,
+      };
+
+      const result = await OrderModel.find(query)
+        .populate("Partisipan")
+        .populate("Darah")
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      const total = await OrderModel.countDocuments(query);
+
+      res.status(200).json({
+        data: result,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        message: "Success get all orders for partisipan",
+      });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({
+        data: err.message,
+        message: "Failed to get orders for partisipan",
+      });
+    }
+  },
+  async findByHistoryPartisipan(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        status = "",
+      } = req.query as unknown as IPaginationQueryPartisipan;
+
+      const { partisipanId } = req.params;
+
+      const query: any = { partisipanId: partisipanId };
+       if (status) {
+         query.status = status;
+       }
+      const result = await OrderModel.find(query)
+        .populate("Partisipan")
+        .populate("Darah")
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+      const total = await OrderModel.countDocuments(query);
+
+      res.status(200).json({
+        data: result,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        message: "Success get all orders for partisipan",
+      });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({
+        data: err.message,
+        message: "Failed to get orders for partisipan",
       });
     }
   },
