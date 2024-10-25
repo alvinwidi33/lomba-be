@@ -26,18 +26,11 @@ const OrderSchema = new Schema(
       required: true,
       unique: true,
     },
-    isCancel: {
-      type: Boolean,
-      default: false,
-    },
-    isReject: {
-      type: Boolean,
-      default: false,
-    },
-    isDone: {
-      type: Boolean,
-      default: false,
-    },
+    status: {
+      type: String,
+      enum:["Ordered","Rejected", "Accepted","Cancelled"],
+      default:"Ordered"
+    }
   },
   {
     timestamps: true,

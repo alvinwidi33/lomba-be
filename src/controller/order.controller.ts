@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import * as Yup from "yup";
 import OrderModel from "../models/order.model";
 import { PartisipanModel, InstitusiKesehatanModel, UsersModel} from "../models/users.model";
+import DarahModel from "../models/darah.model";
 const createValidationSchema = Yup.object().shape({
   volume: Yup.string().required(),
   tanggalDonor: Yup.number().required(),
@@ -187,6 +188,38 @@ export default {
       res.status(500).json({
         message: "Failed to get darah by Institusi Kesehatan",
         error: err.message,
+      });
+    }
+  },
+  async status(req: Request, res: Response): Promise<void> {
+    try {
+      const order = await OrderModel.findOneAndUpdate(
+        { _id: req.params.id },
+        req.body,
+        { new: true }
+      );
+      if (order?.status === "Accepted") {
+        const darah = await DarahModel.findOne({ _id: order.darahId });
+        if (darah) {
+          darah.volume -= order.volumeOrder;
+          if (darah.volume < 0) {
+            res.status(400).json({
+              message: "Volume darah tidak mencukupi.",
+            });
+            return;
+          }
+          await darah.save();
+        }
+      }
+      res.status(200).json({
+        data: order,
+        message: "Success update order",
+      });
+    } catch (error) {
+      const err = error as Error;
+      res.status(500).json({
+        data: err.message,
+        message: "Failed update order",
       });
     }
   },

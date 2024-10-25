@@ -28,6 +28,7 @@ router.post("/order/add", orderController.create);
 router.get("/order/:id", orderController.findOne);
 router.patch("/order/:id", orderController.update);
 router.get("/order/all", orderController.findAll);
+router.patch("/order/status/:id", orderController.status);
 router.get("/order/institusi/:institusiName", orderController.darahByInstitusiKesehatan);
 
 router.post("/upload", uploadMiddleware.single, uploadController.single);
