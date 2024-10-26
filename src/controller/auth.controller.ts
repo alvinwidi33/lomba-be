@@ -122,13 +122,13 @@ export default {
       if (users.roles === "Partisipan") {
         const partisipan = await PartisipanModel.findOne({
           users: users._id,
-        }).populate("users");
+        }).populate("Users");
         res.status(200).json(partisipan || users);
         return;
       } else if (users.roles === "Institusi Kesehatan") {
         const institusi = await InstitusiKesehatanModel.findOne({
           users: users._id,
-        }).populate("users");
+        }).populate("Users");
         res.status(200).json(institusi || users);
         return;
       } else {
