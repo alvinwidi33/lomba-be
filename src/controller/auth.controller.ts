@@ -57,7 +57,7 @@ interface IPaginationQuery {
   roles?: string;
 }
 async function generatePassword(): Promise<string> {
-  return crypto.randomBytes(8).toString('hex'); // Generates a random 16-character password
+  return crypto.randomBytes(8).toString('hex');
 }
 
 export default {
@@ -274,7 +274,6 @@ export default {
 
       await user.save();
 
-      // Save additional data based on user roles
       if (user.roles === "Admin") {
         const admin = new AdminModel({ users: user._id });
         await admin.save();
@@ -317,44 +316,44 @@ export default {
       }
     }
   },
-  async findAll(
-    req: Request<{}, {}, {}, IPaginationQuery>,
-    res: Response
-  ): Promise<void> {
-    try {
-      const { page = 1, limit = 10, search = "", roles } = req.query;
-      const pageNumber = parseInt(page as unknown as string, 10);
-      const limitNumber = parseInt(limit as unknown as string, 10);
+async findAll(
+  req: Request<{}, {}, {}, IPaginationQuery>,
+  res: Response
+): Promise<void> {
+  try {
+    const { page = "1", limit = "10", search = "", roles } = req.query;
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
 
-      const searchQuery: any = search
-        ? { name: { $regex: search, $options: "i" } }
-        : {};
+    const searchQuery: any = search
+      ? { name: { $regex: search, $options: "i" } }
+      : {};
 
-      if (roles) {
-        searchQuery.roles = roles;
-      }
-
-      const totalUsers = await UsersModel.countDocuments(searchQuery);
-
-      const result = await UsersModel.find(searchQuery)
-        .skip((pageNumber - 1) * limitNumber)
-        .limit(limitNumber);
-
-      res.status(200).json({
-        data: result,
-        total: totalUsers,
-        page: pageNumber,
-        totalPages: Math.ceil(totalUsers / limitNumber),
-        message: "Success get all users",
-      });
-    } catch (error) {
-      const err = error as Error;
-      res.status(500).json({
-        data: err.message,
-        message: "Failed to get users",
-      });
+    if (roles) {
+      searchQuery.roles = roles;
     }
-  },
+
+    const totalUsers = await UsersModel.countDocuments(searchQuery);
+
+    const result = await UsersModel.find(searchQuery)
+      .skip((pageNumber - 1) * limitNumber)
+      .limit(limitNumber);
+
+    res.status(200).json({
+      data: result,
+      total: totalUsers,
+      page: pageNumber,
+      totalPages: Math.ceil(totalUsers / limitNumber),
+      message: "Success get all users",
+    });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({
+      data: err.message,
+      message: "Failed to get users",
+    });
+  }
+},
   async findOne(req: Request, res: Response): Promise<void> {
     try {
       const result = await UsersModel.findOne({
